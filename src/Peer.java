@@ -29,8 +29,13 @@ public abstract class Peer {
             case Constants.BUY:
                 processBuy(m);
                 break;
-            case Constants.ACK: // change
-                processAck(m);
+            case Constants.SELL:
+                processSell(m);
+            case Constants.SERVER_ACK:
+                processServerAck(m);
+                break;
+            case Constants.TRADER_ACK:
+                processLeaderAck(m);
                 break;
             case Constants.LEADER_BC:
                 receiveLeaderUpdate(m);
@@ -50,9 +55,9 @@ public abstract class Peer {
     }
 
     abstract void processBuy(Message m) throws MalformedURLException;
-    abstract void processAck(Message m);
+    protected abstract void processSell(Message m) throws MalformedURLException;
+    abstract void processServerAck(Message m) throws MalformedURLException;
+    abstract void processLeaderAck(Message m);
     abstract void receiveLeaderUpdate(Message m);
-
-    // public void sendLeaderElectionMsg(Message message, int nodeID) throws MalformedURLException, InterruptedException {
 
 }

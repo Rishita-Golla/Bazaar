@@ -1,27 +1,33 @@
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.net.MalformedURLException;;
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class Leader extends Peer{
 
     private int leaderID;
     List<Integer> neighborPeerIDs;
-    private HashMap<Integer, HashMap<String, Integer>> sellerItemMap;
+    // trader's local cache for item count lookup
+    private Cache cache;
+    protected int serverID;
     SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
 
-    public Leader(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer, String> peerIPMap) {
+    public Leader(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer, String> peerIPMap) throws InterruptedException {
         super(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap);
         this.leaderID = peerID;
         this.neighborPeerIDs = neighborPeerIDs;
-        this.sellerItemMap = new HashMap<>();
+        cache = new Cache();
+        this.serverID = 4; //testing
+        Thread.sleep(8000);
+        // update serverID
+        updateCache();
         new BroadcastThread().start();
-        readDataFromFile();
+    }
+
+    // Implement cache consistency
+    private void updateCache() throws InterruptedException {
+        cache.put("salt", 5);
+       // Thread.sleep(5000);
     }
 
     public class BroadcastThread extends Thread {
@@ -41,92 +47,49 @@ public class Leader extends Peer{
         }
     }
 
-    // Update seller, products info from the text file each time a new leader is elected
-    public void readDataFromFile() {
-        BufferedReader br;
-        try {
-            String outputPath = "src/sellerInfo.txt";
-            File file = new File(outputPath);
-            br = new BufferedReader(new FileReader(file));
-            String line;
-            int sellerID = 0;
+    @Override
+    void processBuy(Message m) throws MalformedURLException {
+        String item = m.getRequestedItem();
 
-            HashMap<String,Integer> map = new HashMap<>();
-            while ((line = br.readLine()) != null) {
-                if(line.equals("*")) {
-                    HashMap mapCopy = (HashMap) map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-                    sellerItemMap.put(sellerID, mapCopy);
-                    map.clear();
-                }else{
-                    String[] sellerIDInfo = line.split(":");
-                    sellerID = Integer.parseInt(sellerIDInfo[0]);
-                    String[] sellerInfo = sellerIDInfo[1].trim().split(",");
-                    String item = sellerInfo[0];
-                    int itemCount = Integer.parseInt(sellerInfo[1]);
-                    if(sellerID != leaderID) {
-                        map.put(item, itemCount);
-                    }
-                }
-            }
-            br.close();
-            System.out.println("Sellers registered with leader successfully:  " + sellerItemMap);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
+        if(cache.check(item)) {
+            // forward buy request to server
+            sendMessage(serverID, m);
+        } else {
+            sendReply(m.getPeerID(), item, false);
         }
     }
 
     @Override
-    void processBuy(Message m) throws MalformedURLException {
-        String requestedItem = m.getRequestedItem();
-        boolean foundSeller = false;
-        int sellerID = 0;
-
-        for(Map.Entry<Integer, HashMap<String, Integer>> entry : sellerItemMap.entrySet()) {
-            for(Map.Entry<String, Integer> itemAndCountMap : entry.getValue().entrySet())
-                if(itemAndCountMap.getKey().equals(requestedItem) && itemAndCountMap.getValue() > 0) {
-                    foundSeller = true;
-                    sellerID = entry.getKey();
-                    break;
-                }
-        }
-
-        if(foundSeller) {
-            updateItemCount(sellerID, requestedItem);
-            sendTransactionAck(m.getBuyerID(), sellerID, requestedItem);
-        }
+    protected void processSell(Message m) throws MalformedURLException {
+        // forward seller's message to server
+        System.out.println("Forwarding stock message to warehouse");
+        sendMessage(serverID, m);
     }
 
     // update seller, product info after selling an item
-    private void updateItemCount(int sellerID, String item) {
-        HashMap<String, Integer> map = sellerItemMap.get(sellerID);
-        int count = map.get(item);
-        map.put(item, --count);
-        if(count == 0){
-            sellerItemMap.remove(sellerID);
-        }
-        System.out.println("Seller and Item map: "+ sellerItemMap);
-    }
-
-    private void sendTransactionAck(int buyerID, int sellerID, String requestedItem) throws MalformedURLException {
+    private void sendReply(int peerID, String requestedItem, boolean isAvailable) throws MalformedURLException {
         Message m = new Message();
-        m.setMessageType(Constants.ACK);
+        m.setMessageType(Constants.TRADER_ACK);
         m.setRequestedItem(requestedItem);
-        m.setBuyerID(buyerID);
-        m.setSellerID(sellerID);
+        m.setAvailable(isAvailable);
 
-        sendMessage(buyerID, m);
-        sendMessage(sellerID, m);
+        sendMessage(peerID, m);
     }
 
 
     @Override
-    void processAck(Message m) {
+    void processServerAck(Message m) throws MalformedURLException {
+        boolean isBuyerRequest = m.getRequestedItem() != null;
+        System.out.println("isBuyerRequest: " + isBuyerRequest);
 
+        // leader forwards server's message to buyer
+        if(isBuyerRequest)
+            sendReply(m.getPeerID(), m.getRequestedItem(), m.isAvailable());
+        else
+            System.out.println("Stocked sellerID: " + m.getPeerID() + " items in warehouse");
     }
 
-    @Override
-    void receiveLeaderUpdate(Message m) {
-        return;
-    }
+    void processLeaderAck(Message m) {}
+
+    void receiveLeaderUpdate(Message m) {}
 }

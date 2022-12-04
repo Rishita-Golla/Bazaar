@@ -3,56 +3,20 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Node {
-    private Peer peer;
-
-    int peerID;
-    String peerIP;
-    public static final String BUYER = "buyer";
-    public static final String SELLER = "seller";
-    public static final String BuyerAndSeller = "buyerAndSeller";
-
+public class DatabaseServer {
     private BlockingQueue<Message> messageQueue;
+    private Server server;
 
-    public Node(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer,String> peerIPMap, String item) throws InterruptedException {
-        this.peerID = peerID;
-        this.peerIP = peerIP;
+    public DatabaseServer(String databaseIP, Map<Integer, String> peerIDIPMap) {
         this.messageQueue = new LinkedBlockingQueue<>();
-
-        generatePeer(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item);
-        new RMIServerThread(peerIP).start();
+        server = new Server(peerIDIPMap);
+        new RMIServerThread(databaseIP).start();
         new checkQueueMessagesThread().start();
-    }
-
-    private void generatePeer(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer, String> peerIPMap, String item) throws InterruptedException {
-        switch (peerType) {
-            case BUYER:
-                peer = new Buyer(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item); // is peerType needed here?
-                break;
-            case SELLER:
-                peer = new Seller(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item);
-                break;
-            case BuyerAndSeller:
-                peer = new BuyerAndSeller(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item);
-                break;
-            default:
-                peer = new Leader(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap);
-                break;
-        }
-    }
-    
-    public class checkQueueMessagesThread extends Thread {
-        public void run(){
-            while(true){
-                checkMessageQueue();
-            }
-        }
     }
 
     public class RMIServerThread extends Thread {
@@ -87,14 +51,22 @@ public class Node {
         }
     }
 
+    public class checkQueueMessagesThread extends Thread {
+        public void run(){
+            while(true){
+                checkMessageQueue();
+            }
+        }
+    }
+
     private void checkMessageQueue() {
         try{
             if(messageQueue.size() >= 1) {
-                peer.processMessage(Objects.requireNonNull(messageQueue.poll()));
+                // System.out.println("Processing messages on server's side");
+                server.processMessage(Objects.requireNonNull(messageQueue.poll()));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
 }

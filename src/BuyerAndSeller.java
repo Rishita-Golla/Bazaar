@@ -32,7 +32,6 @@ public class BuyerAndSeller extends Peer{
     private void startLookUpWithTrader() throws MalformedURLException {
         Message m = new Message();
         String lookupId = UUID.randomUUID().toString();
-        m.setLookUpId(lookupId);
         m.setRequestedItem(buyerItem);
         sendMessage(leaderID, m);
     }
@@ -43,9 +42,16 @@ public class BuyerAndSeller extends Peer{
     }
 
     @Override
-    void processAck(Message m) {
+    protected void processSell(Message m) {
 
     }
+
+    @Override
+    void processLeaderAck(Message m) {
+
+    }
+
+    void processServerAck(Message m) {}
 
     @Override
     void receiveLeaderUpdate(Message m) {

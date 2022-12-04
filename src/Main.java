@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 public class Main {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
 
         String configFileAddress = args[0];
         int peerID = 0;
@@ -38,6 +38,7 @@ public class Main {
         br.close();
         file.close();
 
+        // send database server ID and IP
         System.out.println("PeerID " + peerID);
         System.out.println("NodeType = " + peerType);
         System.out.println("myIP = " + peerIP);
