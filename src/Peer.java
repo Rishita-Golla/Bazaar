@@ -78,7 +78,7 @@ public abstract class Peer {
     }
 
     public String sendStatus() {
-        if(counter > 5 && peerID == 3) {
+        if(counter > 2 && peerID == 3) {
             System.exit(500);
             return "Not OK";
         }

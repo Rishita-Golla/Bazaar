@@ -1,9 +1,6 @@
 import java.net.MalformedURLException;;
 import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public class Leader extends Peer{
 
@@ -90,33 +87,30 @@ public class Leader extends Peer{
               {
                   try {
                       status = sendStatus(fellowLeader);
-                      Thread.sleep(2000);
+                      Thread.sleep(5000);
                   } catch (MalformedURLException | InterruptedException e) {
                       throw new RuntimeException(e);
                   }
               }
 
-              if(status == null)
-              {
-                  System.out.println("My fellow leader is down. Redirecting buy/sell requests to myself at peerID: "+peerID);
-                  //fellow peer is down
-                  //send broadcast msg to all to redirect requests to new leader
-                  Message m = new Message();
-                  m.setMessageType(Constants.LEADER_UPDATE);
-                  m.setLeaderID(peerID);
+              System.out.println("My fellow leader is down. Redirecting buy/sell requests to myself at peerID: "+peerID);
+              //fellow peer is down
+              //send broadcast msg to all to redirect requests to new leader
+              Message m = new Message();
+              m.setMessageType(Constants.LEADER_UPDATE);
+              m.setLeaderID(peerID);
 
-                  //send leader ID to the network
-                  for(int nodeID : peerIDIPMap.keySet()) {
-                        try {
-                            if(nodeID == fellowLeader)
-                                continue;
-                            else
-                                System.out.println("nodeID:" +nodeID);
-                                sendMessage(nodeID, m);
-                        } catch (MalformedURLException e) {
-                            System.out.println(e.getMessage());
-                        }
-                  }
+              //send leader ID to the network
+              for(int nodeID : peerIDIPMap.keySet()) {
+                    try {
+                        if(nodeID == fellowLeader)
+                            continue;
+                        else
+                            System.out.println("nodeID:" +nodeID);
+                            sendMessage(nodeID, m);
+                    } catch (MalformedURLException e) {
+                        System.out.println(e.getMessage());
+                    }
               }
         }
     }

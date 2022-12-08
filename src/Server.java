@@ -31,14 +31,18 @@ public class Server {
         switch(m.getMessageType()) { // add Leader_BS case
             case Constants.BUY:
                 processBuy(m);
+                break;
             case Constants.SELL:
                 processSell(m);
+                break;
             case Constants.LEADER_UPDATE:
                 receiveLeaderUpdate(m);
             case Constants.CACHE_UPDATE:
                 sendCacheUpdate(m);
+                break;
+            default:
+                System.out.println("Cannot process this request type");
         }
-
     }
 
     private void sendCacheUpdate(Message m) throws MalformedURLException {
@@ -50,15 +54,17 @@ public class Server {
     }
 
     public void receiveLeaderUpdate(Message m) {
-        System.out.println("In server" + m.getLeaderID());
         this.leaderIDList.clear();
-        this.leaderIDList.add(m.getLeaderID());
-        //this.selectedLeader = m.getLeaderID();
+        leaderIDList.add(m.getLeaderID());
         System.out.println("A leader went down. Updated leader list is: "+leaderIDList);
     }
 
     private void processBuy(Message m) throws MalformedURLException {
-        m.setMessageType(Constants.SERVER_ACK);
+
+        Message messageFromServer = new Message();
+        messageFromServer.setPeerID(m.getPeerID());
+        messageFromServer.setRequestedItem(m.getRequestedItem());
+        messageFromServer.setMessageType(Constants.SERVER_ACK);
 
         System.out.println("req item: " + m.getRequestedItem());
         //int itemCount = 5; // access file and get item count
@@ -68,7 +74,7 @@ public class Server {
         if(inventory.containsKey(m.getRequestedItem())){
             int stockCount = inventory.get(m.getRequestedItem());
             if(stockCount > 0) {
-                m.setAvailable(true);
+                messageFromServer.setAvailable(true);
                 stockCount--;
                 if(stockCount == 0) {
                     inventory.remove(m.getRequestedItem());
@@ -77,30 +83,37 @@ public class Server {
                 }
 
             }else{
-                m.setAvailable(false);
+                messageFromServer.setAvailable(false);
             }
         }
-
         // update file to decrement item count
        // sendMessage(leaderId, reply);
         for(int leader:  leaderIDList)
         {
-            sendMessage(leader, m);
+            sendMessage(leader, messageFromServer);
         }
     }
 
     private void processSell(Message m) throws MalformedURLException {
-        m.setMessageType(Constants.SERVER_ACK);
+
+        Message messageFromServer = new Message();
+        messageFromServer.setPeerID(m.getPeerID()); //this is the seller who sent the sell request
+        messageFromServer.setMessageType(Constants.SERVER_ACK);
+        messageFromServer.setStockedItem(m.getStockedItem());
+        messageFromServer.setStockItemCount(m.getStockItemCount());
+
         // send item and count to inc cache?
         // access file and update item count - stock
         inventory.put(m.getStockedItem(), m.getStockItemCount());
         writeDataToFile();
         System.out.println("Status of inventory after stocking"+ inventory);
         System.out.println("Sending stock ack to trader");
-        for(int leader:  leaderIDList)
-        {
-            sendMessage(leader, m);
-        }
+        sendMessage(m.getLeaderID(),messageFromServer);
+
+//        for(int leader:  leaderIDList)
+//        {
+//            sendMessage(leader, messageFromServer);
+//        }
         //sendMessage(3, m); // set boolean ack. When warehouse can't stock?
     }
 
