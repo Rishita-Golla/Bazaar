@@ -2,14 +2,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Cache {
-    public Map<String, Integer> cache = new HashMap<>();
+    public Map<String, Integer> cache;
 
-    public Cache(){};
+    public Cache() {
+        cache = new HashMap<>();
+    };
+
+    public Cache(HashMap<String, Integer> updatedCache) {
+        cache = new HashMap<>(updatedCache);
+    }
 
     public boolean check(String item) {
         return cache.containsKey(item);
     }
     public int get(String item) {
+        if(!check(item))
+            return 0;
+
         return cache.get(item);
     }
 

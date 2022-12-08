@@ -1,4 +1,5 @@
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
 
 public class Message implements Serializable {
@@ -10,9 +11,17 @@ public class Message implements Serializable {
     private int leaderID;
     private String messageType;
     private boolean available;
-
+    private HashMap<String, Integer> cacheResponse;
     private int sellerID;
     List<Integer> leaderIdsList;
+
+    public void setCacheResponse(HashMap<String, Integer> cacheResponse) {
+        this.cacheResponse = cacheResponse;
+    }
+
+    public HashMap<String, Integer> getCacheResponse() {
+        return cacheResponse;
+    }
 
     public int getStockItemCount() {
         return stockItemCount;

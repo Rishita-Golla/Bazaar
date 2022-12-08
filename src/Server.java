@@ -16,7 +16,7 @@ public class Server {
     protected final Map<Integer, String> peerIDIPMap;
     private List<Integer> leaderIDList = new ArrayList<>();
 
-    public static HashMap<String, Integer> inventory = new HashMap<>();
+    public HashMap<String, Integer> inventory = new HashMap<>();
 
     Server(Map<Integer, String> peerIDIPMap) {
         // create a new file to store all item/count info
@@ -35,8 +35,18 @@ public class Server {
                 processSell(m);
             case Constants.LEADER_UPDATE:
                 receiveLeaderUpdate(m);
+            case Constants.CACHE_UPDATE:
+                sendCacheUpdate(m);
         }
 
+    }
+
+    private void sendCacheUpdate(Message m) throws MalformedURLException {
+        System.out.println("Sending cache update to leader: " + m.getLeaderID());
+        Message cacheUpdate = new Message();
+        cacheUpdate.setMessageType(Constants.CACHE_UPDATE);
+        cacheUpdate.setCacheResponse(new HashMap<>(inventory));
+        sendMessage(m.getLeaderID(), cacheUpdate);
     }
 
     public void receiveLeaderUpdate(Message m) {
@@ -51,7 +61,6 @@ public class Server {
         m.setMessageType(Constants.SERVER_ACK);
 
         System.out.println("req item: " + m.getRequestedItem());
-
         //int itemCount = 5; // access file and get item count
         inventory.clear();
         readDataFromFile();

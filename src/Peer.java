@@ -36,6 +36,7 @@ public abstract class Peer {
             case Constants.SELL:
                 counter++;
                 processSell(m);
+                break;
             case Constants.SERVER_ACK:
                 processServerAck(m);
                 break;
@@ -45,8 +46,12 @@ public abstract class Peer {
             case Constants.LEADER_UPDATE:
                 receiveLeaderUpdate(m);
                 break;
+            case Constants.CACHE_UPDATE:
+                receiveCacheUpdate(m);
+                break;
         }
     }
+
 
     public void sendMessage(int receiverID, Message m) throws MalformedURLException {
         URL url = new URL(peerIDIPMap.get(receiverID));
@@ -86,5 +91,6 @@ public abstract class Peer {
     abstract void processServerAck(Message m) throws MalformedURLException;
     abstract void processLeaderAck(Message m);
     abstract void receiveLeaderUpdate(Message m);
+    protected abstract void receiveCacheUpdate(Message m);
 
 }
