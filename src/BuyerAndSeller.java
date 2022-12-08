@@ -20,7 +20,7 @@ public class BuyerAndSeller extends Peer{
             while(true){
                 try {
                     Thread.sleep(4000);
-                    startLookUpWithTrader();
+                   // startLookUpWithTrader();
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                 }
@@ -56,11 +56,10 @@ public class BuyerAndSeller extends Peer{
 
     }
 
-    void processServerAck(Message m) {}
+    @Override
+    protected void receiveCacheUpdate(Message m) {
 
-//    @Override
-//    void receiveLeaderUpdate(Message m) {
-//        leaderID = m.getLeaderID();
-//        System.out.println("Received leader update, new leader Id is " + leaderID);
-//    }
+    }
+
+    void processServerAck(Message m) {}
 }

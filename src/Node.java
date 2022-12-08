@@ -14,9 +14,9 @@ public class Node {
 
     int peerID;
     String peerIP;
-    public static final String BUYER = "buyer";
-    public static final String SELLER = "seller";
-    public static final String BuyerAndSeller = "buyerAndSeller";
+    private static final String BUYER = "buyer";
+    private static final String SELLER = "seller";
+    private static final String BuyerAndSeller = "buyerAndSeller";
 
     private BlockingQueue<Message> messageQueue;
 

@@ -5,26 +5,26 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Server {
 
     protected final Map<Integer, String> peerIDIPMap;
     private List<Integer> leaderIDList = new ArrayList<>();
+    public HashMap<String, Integer> inventory = new HashMap<>();
 
-    public static HashMap<String, Integer> inventory = new HashMap<>();
+    SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+    Date date = new Date(System.currentTimeMillis());
 
     Server(Map<Integer, String> peerIDIPMap) {
         // create a new file to store all item/count info
         this.peerIDIPMap = peerIDIPMap;
         leaderIDList.add(3);
-        leaderIDList.add(5);
-        System.out.println(inventory);
-        System.out.println(leaderIDList);
+        // leaderIDList.add(5);
+        System.out.println(formatter.format(date)+" Inventory at start:" + inventory);
+        System.out.println(formatter.format(date)+" Leader IDs" + leaderIDList);
     }
 
     public void processMessage(Message m) throws MalformedURLException {
@@ -37,11 +37,20 @@ public class Server {
                 break;
             case Constants.LEADER_UPDATE:
                 receiveLeaderUpdate(m);
+            case Constants.CACHE_UPDATE:
+                sendCacheUpdate(m);
                 break;
             default:
                 System.out.println("Cannot process this request type");
         }
+    }
 
+    private void sendCacheUpdate(Message m) throws MalformedURLException {
+        System.out.println(formatter.format(date)+" Sending cache update to leader: " + m.getLeaderID());
+        Message cacheUpdate = new Message();
+        cacheUpdate.setMessageType(Constants.CACHE_UPDATE);
+        cacheUpdate.setCacheResponse(new HashMap<>(inventory));
+        sendMessage(m.getLeaderID(), cacheUpdate);
     }
 
     public void receiveLeaderUpdate(Message m) {
@@ -57,9 +66,7 @@ public class Server {
         messageFromServer.setRequestedItem(m.getRequestedItem());
         messageFromServer.setMessageType(Constants.SERVER_ACK);
 
-        System.out.println("req item: " + m.getRequestedItem());
-
-        //int itemCount = 5; // access file and get item count
+        System.out.println(formatter.format(date)+" Requested item: " + m.getRequestedItem());
         inventory.clear();
         readDataFromFile();
 
@@ -80,6 +87,7 @@ public class Server {
         }
         // update file to decrement item count
        // sendMessage(leaderId, reply);
+        writeDataToFile();
         for(int leader:  leaderIDList)
         {
             sendMessage(leader, messageFromServer);
@@ -94,19 +102,11 @@ public class Server {
         messageFromServer.setStockedItem(m.getStockedItem());
         messageFromServer.setStockItemCount(m.getStockItemCount());
 
-        // send item and count to inc cache?
-        // access file and update item count - stock
-        inventory.put(m.getStockedItem(), m.getStockItemCount());
+        inventory.put(m.getStockedItem(), inventory.getOrDefault(m.getStockedItem(), 0) + m.getStockItemCount());
         writeDataToFile();
-        System.out.println("Status of inventory after stocking"+ inventory);
-        System.out.println("Sending stock ack to trader");
+        System.out.println(formatter.format(date)+" Status of inventory after stocking "+ inventory);
+        System.out.println(formatter.format(date)+" Sending stock ack to trader");
         sendMessage(m.getLeaderID(),messageFromServer);
-
-//        for(int leader:  leaderIDList)
-//        {
-//            sendMessage(leader, messageFromServer);
-//        }
-        //sendMessage(3, m); // set boolean ack. When warehouse can't stock?
     }
 
     public void sendMessage(int receiverID, Message m) throws MalformedURLException {
@@ -150,7 +150,7 @@ public class Server {
             String line = null;
             inventory.clear();
             while ((line = br.readLine()) != null) {
-                System.out.println(line);
+                // System.out.println(line);
                 if(line.equals("null:0")) continue;
                 String[] sellerInfo = line.split(":");
                 String item = sellerInfo[0];

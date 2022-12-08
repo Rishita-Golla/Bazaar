@@ -1,4 +1,6 @@
 import java.net.MalformedURLException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -7,15 +9,14 @@ public class Seller extends Peer{
 
     private String sellerItem;
     protected List<Integer> leaderIdsList;
-
-    private int selectedLeader;
     Random random = new Random();
+    SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+    Date date = new Date(System.currentTimeMillis());
 
     public Seller(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer, String> peerIPMap, String item, List<Integer> leaderIdsList) {
         super(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap);
         this.sellerItem = item;
         this.leaderIdsList = leaderIdsList;
-        this.selectedLeader = leaderIdsList.get(random.nextInt(leaderIdsList.size()));
         new StockGoodsThread().start();
     }
     
@@ -25,8 +26,8 @@ public class Seller extends Peer{
 
             while(true) {
                 try {
-                    // stock goods every 5s
-                    Thread.sleep(10000);
+                    // stock goods every 10s
+                    Thread.sleep(15000);
                     stockGoods();
                 } catch (InterruptedException | MalformedURLException e) {
                     System.out.println(e.getMessage());
@@ -36,21 +37,27 @@ public class Seller extends Peer{
     }
 
     private void stockGoods() throws MalformedURLException {
+        int selectedLeader = leaderIdsList.get(random.nextInt(leaderIdsList.size()));
+
         Message m = new Message();
         m.setMessageType(Constants.SELL);
         m.setStockedItem(sellerItem);
         m.setStockItemCount(Constants.SELLER_STOCK_COUNT);
         m.setPeerID(this.peerID);
+        m.setLeaderID(selectedLeader);
 
-        System.out.println("The leader chosen by seller is:"+ this.selectedLeader);
-        sendMessage(this.selectedLeader, m);
-        //sendMessage(3, m);
+        System.out.println(formatter.format(date)+" Sending message to stock goods to leader : " + selectedLeader);
+        sendMessage(selectedLeader, m);
     }
 
     @Override
     void receiveLeaderUpdate(Message m) {
-        this.selectedLeader = m.getLeaderID();
-        System.out.println("Received leader update, new leader Id is " + this.selectedLeader );
+        System.out.println(formatter.format(date)+" Received leader update, new leader Id is " + m.getLeaderID() );
+    }
+
+    @Override
+    protected void receiveCacheUpdate(Message m) {
+
     }
 
     void processBuy(Message m) {

@@ -1,4 +1,6 @@
 import java.net.MalformedURLException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -8,8 +10,8 @@ public class Buyer extends Peer{
     protected final Map<Integer, String> peerIDIPMap;
     private String buyerItem;
     protected List<Integer> leaderIdsList;
-
-    private int selectedLeader;
+    SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+    Date date = new Date(System.currentTimeMillis());
     Random random = new Random();
 
     public Buyer(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer, String> peerIPMap, String item, List<Integer> leaderIdsList) {
@@ -17,7 +19,6 @@ public class Buyer extends Peer{
         this.peerIDIPMap = peerIPMap;
         this.buyerItem = item;
         this.leaderIdsList = leaderIdsList;
-        this.selectedLeader = leaderIdsList.get(random.nextInt(leaderIdsList.size()));
         new LookUpThread().start();
     }
 
@@ -41,31 +42,33 @@ public class Buyer extends Peer{
     }
 
     private void startLookUpWithTrader() throws MalformedURLException {
+        int selectedLeader = leaderIdsList.get(random.nextInt(leaderIdsList.size()));
+
         Message m = new Message();
         m.setMessageType(Constants.BUY);
         m.setRequestedItem(buyerItem);
         m.setPeerID(this.peerID);
+        m.setLeaderID(selectedLeader);
 
-        m.setLeaderID(this.selectedLeader);
-
-        //System.out.println("Starting new lookup for item: " + buyerItem + " with trader: " + leaderID);
-        // sendMessage(leaderID, m);
-        System.out.println("Starting new lookup for item: " + buyerItem + " with trader: " + this.selectedLeader);
-        sendMessage(this.selectedLeader, m);
+        System.out.println(formatter.format(date)+" Starting new lookup for item: " + buyerItem + " with trader: " + selectedLeader);
+        sendMessage(selectedLeader, m);
     }
 
     @Override
     void processLeaderAck(Message m) {
         if(m.isAvailable())
-            System.out.println("Received acknowledgement from trader, Shipped: " + m.getRequestedItem());
+            System.out.println(formatter.format(date)+" Received acknowledgement from trader, Shipped: " + m.getRequestedItem());
         else
-            System.out.println("Received acknowledgement from trader, requested item: " + m.getRequestedItem()+" not available");
+            System.out.println(formatter.format(date)+" Received acknowledgement from trader, requested item: " + m.getRequestedItem()+" not available");
     }
 
     @Override
     void receiveLeaderUpdate(Message m) {
-        this.selectedLeader = m.getLeaderID();
-        System.out.println("Received leader update, new leader Ids are " + this.selectedLeader);
+        System.out.println(formatter.format(date)+" Received leader update, new leader Ids are " + m.getLeaderID());
+    }
+
+    @Override
+    protected void receiveCacheUpdate(Message m) {
     }
 
     void processBuy(Message m) {
