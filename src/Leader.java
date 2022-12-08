@@ -1,9 +1,6 @@
 import java.net.MalformedURLException;;
 import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public class Leader extends Peer{
 
@@ -82,7 +79,7 @@ public class Leader extends Peer{
               {
                   try {
                       status = sendStatus(fellowLeader);
-                      Thread.sleep(2000);
+                      Thread.sleep(5000);
                   } catch (MalformedURLException e) {
                       throw new RuntimeException(e);
                   } catch (InterruptedException e) {
@@ -97,6 +94,9 @@ public class Leader extends Peer{
                   //send broadcast msg to all to redirect requests to new leader
                   Message m = new Message();
                   m.setMessageType(Constants.LEADER_UPDATE);
+//                  List newLeaderList = new ArrayList<>();
+//                  newLeaderList.add(peerID);
+//                  m.setLeaderIdsList(newLeaderList);
                   m.setLeaderID(peerID);
 
                   //send leader ID to the network
