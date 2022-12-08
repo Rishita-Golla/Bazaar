@@ -1,2 +1,2 @@
-1:salt,4
-*
+null:0
+salt:4

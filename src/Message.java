@@ -10,6 +10,8 @@ public class Message implements Serializable {
     private int leaderID;
     private String messageType;
     private boolean available;
+
+    private int sellerID;
     List<Integer> leaderIdsList;
 
     public int getStockItemCount() {
@@ -75,5 +77,14 @@ public class Message implements Serializable {
     public void setLeaderID(int leaderID) {
         this.leaderID = leaderID;
     }
+
+    public int getSellerID() {
+        return sellerID;
+    }
+
+    public void setSellerID(int sellerID) {
+        this.sellerID = sellerID;
+    }
+
 }
 

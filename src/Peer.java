@@ -12,7 +12,10 @@ public abstract class Peer {
     protected final String ip;
     protected int peerID;
     protected final List<Integer> neighborPeerID;
+
     protected final Map<Integer, String> peerIDIPMap;
+
+    private int counter = 0;
 
     public Peer(int peerID, String peerType, String ip, List<Integer> neighborPeerID, Map<Integer, String> peerIDIPMap) {
         this.type = peerType;
@@ -27,9 +30,11 @@ public abstract class Peer {
     public void processMessage(Message m) throws MalformedURLException {
         switch (m.getMessageType()) {
             case Constants.BUY:
+                counter++;
                 processBuy(m);
                 break;
             case Constants.SELL:
+                counter++;
                 processSell(m);
             case Constants.SERVER_ACK:
                 processServerAck(m);
@@ -37,7 +42,7 @@ public abstract class Peer {
             case Constants.TRADER_ACK:
                 processLeaderAck(m);
                 break;
-            case Constants.LEADER_BC:
+            case Constants.LEADER_UPDATE:
                 receiveLeaderUpdate(m);
                 break;
         }
@@ -52,6 +57,28 @@ public abstract class Peer {
         } catch (RemoteException | NotBoundException e) {
             System.out.println(e.getMessage());
         }
+    }
+
+    public String sendStatus(int fellowLeader) throws MalformedURLException {
+        System.out.println("checking status of "+fellowLeader);
+        URL url = new URL(peerIDIPMap.get(fellowLeader));
+        try {
+            Registry registry = LocateRegistry.getRegistry(url.getHost(), url.getPort());
+            RemoteInterface remoteInterface = (RemoteInterface) registry.lookup("RemoteInterface");
+            return remoteInterface.leaderStatus();
+        } catch (RemoteException | NotBoundException e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
+    }
+
+    public String sendStatus() {
+        if(counter > 5 && peerID == 3) {
+            System.exit(500);
+            return "Not OK";
+        }
+        else
+            return "OK";
     }
 
     abstract void processBuy(Message m) throws MalformedURLException;

@@ -3,6 +3,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
@@ -17,6 +19,7 @@ public class DatabaseServer {
         server = new Server(peerIDIPMap);
         new RMIServerThread(databaseIP).start();
         new checkQueueMessagesThread().start();
+
     }
 
     public class RMIServerThread extends Thread {
@@ -48,6 +51,11 @@ public class DatabaseServer {
         @Override
         public void send(Message m) throws RemoteException {
             messageQueue.add(m);
+        }
+
+        @Override
+        public String leaderStatus() throws RemoteException {
+            return null;
         }
     }
 

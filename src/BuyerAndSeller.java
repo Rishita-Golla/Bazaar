@@ -51,11 +51,16 @@ public class BuyerAndSeller extends Peer{
 
     }
 
-    void processServerAck(Message m) {}
-
     @Override
     void receiveLeaderUpdate(Message m) {
-        leaderID = m.getLeaderID();
-        System.out.println("Received leader update, new leader Id is " + leaderID);
+
     }
+
+    void processServerAck(Message m) {}
+
+//    @Override
+//    void receiveLeaderUpdate(Message m) {
+//        leaderID = m.getLeaderID();
+//        System.out.println("Received leader update, new leader Id is " + leaderID);
+//    }
 }

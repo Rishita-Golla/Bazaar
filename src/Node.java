@@ -20,29 +20,29 @@ public class Node {
 
     private BlockingQueue<Message> messageQueue;
 
-    public Node(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer,String> peerIPMap, String item) throws InterruptedException {
+    public Node(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer,String> peerIPMap, String item, List<Integer> leaderList) throws InterruptedException {
         this.peerID = peerID;
         this.peerIP = peerIP;
         this.messageQueue = new LinkedBlockingQueue<>();
 
-        generatePeer(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item);
+        generatePeer(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item, leaderList);
         new RMIServerThread(peerIP).start();
         new checkQueueMessagesThread().start();
     }
 
-    private void generatePeer(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer, String> peerIPMap, String item) throws InterruptedException {
+    private void generatePeer(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer, String> peerIPMap, String item, List<Integer> leaderList) throws InterruptedException {
         switch (peerType) {
             case BUYER:
-                peer = new Buyer(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item); // is peerType needed here?
+                peer = new Buyer(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item, leaderList); // is peerType needed here?
                 break;
             case SELLER:
-                peer = new Seller(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item);
+                peer = new Seller(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item, leaderList);
                 break;
             case BuyerAndSeller:
                 peer = new BuyerAndSeller(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item);
                 break;
             default:
-                peer = new Leader(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap);
+                peer = new Leader(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, leaderList);
                 break;
         }
     }
@@ -84,6 +84,11 @@ public class Node {
         @Override
         public void send(Message m) throws RemoteException {
             messageQueue.add(m);
+        }
+
+        @Override
+        public String leaderStatus() throws RemoteException {
+            return peer.sendStatus();
         }
     }
 

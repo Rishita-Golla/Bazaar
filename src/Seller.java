@@ -7,16 +7,22 @@ public class Seller extends Peer{
 
     private String sellerItem;
     protected List<Integer> leaderIdsList;
+
+    private int selectedLeader;
     Random random = new Random();
 
-    public Seller(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer, String> peerIPMap, String item) {
+    public Seller(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer, String> peerIPMap, String item, List<Integer> leaderIdsList) {
         super(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap);
         this.sellerItem = item;
+        this.leaderIdsList = leaderIdsList;
+        this.selectedLeader = leaderIdsList.get(random.nextInt(leaderIdsList.size()));
         new StockGoodsThread().start();
     }
     
     public class StockGoodsThread extends Thread {
+
         public void run() {
+
             while(true) {
                 try {
                     // stock goods every 5s
@@ -36,17 +42,15 @@ public class Seller extends Peer{
         m.setStockItemCount(Constants.SELLER_STOCK_COUNT);
         m.setPeerID(this.peerID);
 
-       // int leaderID = random.nextInt(leaderIdsList.size());
-        // sendMessage(leaderID, m);
-        sendMessage(3, m);
+        System.out.println("The leader chosen by seller is:"+ this.selectedLeader);
+        sendMessage(this.selectedLeader, m);
+        //sendMessage(3, m);
     }
 
     @Override
     void receiveLeaderUpdate(Message m) {
-        // leaderIdsList = m.getLeaderIDsList();
-        int leaderId = m.getLeaderID();
-        System.out.println("Received leader update, new leader Ids are " + leaderId);
-        // System.out.println("Received leader update, new leader Ids are " + leaderIdsList);
+        this.selectedLeader = m.getLeaderID();
+        System.out.println("Received leader update, new leader Id is " + this.selectedLeader );
     }
 
     void processBuy(Message m) {
