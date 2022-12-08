@@ -3,16 +3,16 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class DatabaseServer {
     private BlockingQueue<Message> messageQueue;
     private Server server;
+    SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+    Date date = new Date(System.currentTimeMillis());
 
     public DatabaseServer(String databaseIP, Map<Integer, String> peerIDIPMap) {
         this.messageQueue = new LinkedBlockingQueue<>();
@@ -70,7 +70,6 @@ public class DatabaseServer {
     private void checkMessageQueue() {
         try{
             if(messageQueue.size() >= 1) {
-                // System.out.println("Processing messages on server's side");
                 server.processMessage(Objects.requireNonNull(messageQueue.poll()));
             }
         } catch (Exception e) {

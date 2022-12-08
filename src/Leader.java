@@ -1,4 +1,4 @@
-import java.net.MalformedURLException;;
+import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -13,6 +13,7 @@ public class Leader extends Peer{
     protected int serverID;
     private int processedRequests = 0;
     SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+    Date date = new Date(System.currentTimeMillis());
 
     public Leader(int peerID, String peerType, String peerIP, List<Integer> neighborPeerIDs, Map<Integer, String> peerIPMap, List<Integer> leaderIdsList) throws InterruptedException {
         super(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap);
@@ -22,96 +23,33 @@ public class Leader extends Peer{
         this.neighborPeerIDs = neighborPeerIDs;
         cache = new Cache();
         this.serverID = 4; //testing
-        new UpdateCacheThread().start();
         Thread.sleep(8000);
-        // update serverID
-        new BroadcastThread().start();
+        new UpdateCacheThread().start();
     }
 
-    class TimeOutTask extends TimerTask {
-        private Thread thread;
-        private Timer timer;
-
-        public TimeOutTask(Thread thread, Timer timer) {
-            this.thread = thread;
-            this.timer = timer;
-        }
-
-        @Override
-        public void run() {
-            if(thread != null && thread.isAlive()) {
-                thread.interrupt();
-                timer.cancel();
-            }
-        }
-    }
-
-    // Implement cache consistency
     private class UpdateCacheThread extends Thread {
         public void run() {
-            boolean firstCheck = true;
-            while(processedRequests >= Constants.PROCESSED_REQUESTS_THRESHOLD || firstCheck) {
-                Message m = new Message();
-                m.setLeaderID(peerID);
-                m.setMessageType(Constants.CACHE_UPDATE);
-                System.out.println("Refreshing cache, processed requests count is: " + processedRequests);
-                try {
-                    sendMessage(serverID, m);
-                } catch (MalformedURLException e) {
-                    System.out.println(e.getMessage());
+
+            while(true) {
+                if(processedRequests >= Constants.PROCESSED_REQUESTS_THRESHOLD) {
+                    Message m = new Message();
+                    m.setLeaderID(peerID);
+                    m.setMessageType(Constants.CACHE_UPDATE);
+                    System.out.println(formatter.format(date)+" Refreshing cache, processed requests count is: " + processedRequests);
+                    try {
+                        sendMessage(serverID, m);
+                    } catch (MalformedURLException e) {
+                        System.out.println(e.getMessage());
+                    }
+                    processedRequests = 0;
                 }
-                processedRequests = 0;
-                firstCheck = false;
             }
         }
     }
 
     private class BroadcastThread extends Thread {
+        // Thread to broadcast elected leader
         public void run() {
-            int index =0;
-            while(peerID == leaderIDList.get(index)) {
-                index++;
-            }
-            int fellowLeader = leaderIDList.get(index);
-            System.out.println("My fellow leader is:"+fellowLeader);
-
-            String status = "OK";
-            if(peerID == 3){
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            while(status != null)
-              {
-                  try {
-                      status = sendStatus(fellowLeader);
-                      Thread.sleep(5000);
-                  } catch (MalformedURLException | InterruptedException e) {
-                      throw new RuntimeException(e);
-                  }
-              }
-
-              System.out.println("My fellow leader is down. Redirecting buy/sell requests to myself at peerID: "+peerID);
-              //fellow peer is down
-              //send broadcast msg to all to redirect requests to new leader
-              Message m = new Message();
-              m.setMessageType(Constants.LEADER_UPDATE);
-              m.setLeaderID(peerID);
-
-              //send leader ID to the network
-              for(int nodeID : peerIDIPMap.keySet()) {
-                    try {
-                        if(nodeID == fellowLeader)
-                            continue;
-                        else
-                            System.out.println("nodeID:" +nodeID);
-                            sendMessage(nodeID, m);
-                    } catch (MalformedURLException e) {
-                        System.out.println(e.getMessage());
-                    }
-              }
         }
     }
 
@@ -122,8 +60,10 @@ public class Leader extends Peer{
 
         if(cache.check(item)) {
             // forward buy request to server
+            System.out.println(formatter.format(date)+" Forwarding buy message to warehouse");
             sendMessage(serverID, m);
         } else {
+            System.out.println(formatter.format(date)+" Checked cache, item not available in inventory");
             sendReply(m.getPeerID(), item, false);
         }
     }
@@ -132,7 +72,7 @@ public class Leader extends Peer{
     protected void processSell(Message m) throws MalformedURLException {
         // forward seller's message to server
         processedRequests++;
-        System.out.println("Forwarding stock message to warehouse");
+        System.out.println(formatter.format(date)+" Forwarding seller " + m.getPeerID() + " stock message to warehouse");
         sendMessage(serverID, m);
     }
 
@@ -149,22 +89,31 @@ public class Leader extends Peer{
 
     @Override
     void processServerAck(Message m) throws MalformedURLException {
-        boolean isBuyerRequest = m.getRequestedItem() != null;
-        System.out.println("isBuyerRequest: " + isBuyerRequest);
+        System.out.println(formatter.format(date)+" Cache before receiving server ack: " + cache.getEntries());
 
-        // leader forwards server's message to buyer
+        // leader forwards server's message to buyer and seller
+        boolean isBuyerRequest = m.getRequestedItem() != null;
         if(isBuyerRequest) {
             String requestedItem = m.getRequestedItem();
-            if(m.isAvailable())
-                cache.put(requestedItem, cache.get(requestedItem)-1);
+            if(m.isAvailable()) {
+                int count = cache.get(requestedItem);
+                if(count == 0) {
+                    cache.remove(requestedItem);
+                    System.out.println(formatter.format(date)+" Removing " + requestedItem + " from cache");
+                } else {
+                    cache.put(requestedItem, --count);
+                }
+            }
 
             sendReply(m.getPeerID(), requestedItem, m.isAvailable());
         }
         else {
             String stockedItem = m.getStockedItem();
-            System.out.println("Stocked sellerID: " + m.getPeerID() + " items in warehouse");
+            System.out.println(formatter.format(date)+" Stocked sellerID: " + m.getPeerID() + " items in warehouse");
             cache.put(stockedItem, cache.get(stockedItem) + m.getStockItemCount());
         }
+
+        System.out.println(formatter.format(date)+" Updated cache after server ack: " + cache.getEntries());
     }
 
     void processLeaderAck(Message m) {}
@@ -174,6 +123,6 @@ public class Leader extends Peer{
     @Override
     protected void receiveCacheUpdate(Message m) {
         cache = new Cache(m.getCacheResponse());
-        System.out.println("Updated cache " + cache);
+        System.out.println(formatter.format(date)+" Updated cache " + cache.getEntries());
     }
 }

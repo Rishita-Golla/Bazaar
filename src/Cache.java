@@ -1,5 +1,6 @@
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class Cache {
     public Map<String, Integer> cache;
@@ -28,5 +29,9 @@ public class Cache {
 
     public void remove(String item) {
         cache.remove(item);
+    }
+
+    public Set<Map.Entry<String, Integer>> getEntries() {
+        return cache.entrySet();
     }
 }

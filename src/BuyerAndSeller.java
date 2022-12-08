@@ -20,7 +20,7 @@ public class BuyerAndSeller extends Peer{
             while(true){
                 try {
                     Thread.sleep(4000);
-                    startLookUpWithTrader();
+                   // startLookUpWithTrader();
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                 }

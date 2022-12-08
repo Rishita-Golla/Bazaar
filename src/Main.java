@@ -56,7 +56,7 @@ public class Main {
 
         List<Integer> leaderList = new ArrayList<>();
         leaderList.add(3);
-        leaderList.add(5);
+        // leaderList.add(5);
 
         Node node = new Node(peerID, peerType, peerIP, neighborPeerIDs, peerIPMap, item, leaderList);
         System.out.println("Node " + peerID + " initialized and running");
