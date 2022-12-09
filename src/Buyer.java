@@ -31,7 +31,7 @@ public class Buyer extends Peer{
             }
             while(true){
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(6000);
                     startLookUpWithTrader();
                 } catch (Exception e) {
                     System.out.println(e.getMessage());

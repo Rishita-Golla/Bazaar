@@ -31,17 +31,19 @@ public class Leader extends Peer{
         public void run() {
 
             while(true) {
-                if(processedRequests >= Constants.PROCESSED_REQUESTS_THRESHOLD) {
-                    Message m = new Message();
-                    m.setLeaderID(peerID);
-                    m.setMessageType(Constants.CACHE_UPDATE);
-                    System.out.println(formatter.format(date)+" Refreshing cache, processed requests count is: " + processedRequests);
-                    try {
-                        sendMessage(serverID, m);
-                    } catch (MalformedURLException e) {
-                        System.out.println(e.getMessage());
-                    }
-                    processedRequests = 0;
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                Message m = new Message();
+                m.setLeaderID(peerID);
+                m.setMessageType(Constants.CACHE_UPDATE);
+                System.out.println(formatter.format(date)+" Refreshing cache");
+                try {
+                    sendMessage(serverID, m);
+                } catch (MalformedURLException e) {
+                    System.out.println(e.getMessage());
                 }
             }
         }

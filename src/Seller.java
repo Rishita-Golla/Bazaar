@@ -27,7 +27,7 @@ public class Seller extends Peer{
             while(true) {
                 try {
                     // stock goods every 10s
-                    Thread.sleep(15000);
+                    Thread.sleep(3000);
                     stockGoods();
                 } catch (InterruptedException | MalformedURLException e) {
                     System.out.println(e.getMessage());

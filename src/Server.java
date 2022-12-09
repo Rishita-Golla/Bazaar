@@ -8,6 +8,7 @@ import java.rmi.registry.Registry;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.nio.file.*;
 
 public class Server {
 
@@ -27,7 +28,7 @@ public class Server {
         System.out.println(formatter.format(date)+" Leader IDs" + leaderIDList);
     }
 
-    public void processMessage(Message m) throws MalformedURLException {
+    public void processMessage(Message m) throws IOException {
         switch(m.getMessageType()) { // add Leader_BS case
             case Constants.BUY:
                 processBuy(m);
@@ -62,12 +63,15 @@ public class Server {
     private void processBuy(Message m) throws MalformedURLException {
 
         Message messageFromServer = new Message();
-        messageFromServer.setPeerID(m.getPeerID());
+        messageFromServer.setPeerID(m.getPeerID()); //buyer who sent this request
         messageFromServer.setRequestedItem(m.getRequestedItem());
         messageFromServer.setMessageType(Constants.SERVER_ACK);
 
         System.out.println(formatter.format(date)+" Requested item: " + m.getRequestedItem());
+
+        //reset the map
         inventory.clear();
+        //update the map with file/DB values
         readDataFromFile();
 
         if(inventory.containsKey(m.getRequestedItem())){
@@ -76,6 +80,7 @@ public class Server {
                 messageFromServer.setAvailable(true);
                 stockCount--;
                 if(stockCount == 0) {
+                    System.out.println("Stock count is 0");
                     inventory.remove(m.getRequestedItem());
                 }else{
                     inventory.put(m.getRequestedItem(),stockCount);
@@ -84,27 +89,46 @@ public class Server {
             }else{
                 messageFromServer.setAvailable(false);
             }
+        }else{
+            System.out.println("The requested item is not available in the inventory");
         }
         // update file to decrement item count
        // sendMessage(leaderId, reply);
         writeDataToFile();
+        System.out.println("The latest state of the Database/Inventory is"+inventory);
         for(int leader:  leaderIDList)
         {
             sendMessage(leader, messageFromServer);
         }
     }
 
-    private void processSell(Message m) throws MalformedURLException {
+    private void processSell(Message m) throws IOException {
 
         Message messageFromServer = new Message();
         messageFromServer.setPeerID(m.getPeerID()); //this is the seller who sent the sell request
         messageFromServer.setMessageType(Constants.SERVER_ACK);
-        messageFromServer.setStockedItem(m.getStockedItem());
-        messageFromServer.setStockItemCount(m.getStockItemCount());
 
+        Path path = Paths.get("src/sellerInfo.txt");
+////        if (Files.exists(path)) {
+////            readDataFromFile();
+////        }
+        if(Files.notExists(path)) {
+            File file = new File(path.toString());
+            boolean result;
+            result = file.createNewFile();
+            System.out.println("Read file correctly"+result);
+        }
+
+        //update inventory map with database info
+        readDataFromFile();
+        //make updates based on new seller request
         inventory.put(m.getStockedItem(), inventory.getOrDefault(m.getStockedItem(), 0) + m.getStockItemCount());
         writeDataToFile();
         System.out.println(formatter.format(date)+" Status of inventory after stocking "+ inventory);
+
+        messageFromServer.setStockedItem(m.getStockedItem());
+        messageFromServer.setStockItemCount(inventory.get(m.getStockedItem()));
+
         System.out.println(formatter.format(date)+" Sending stock ack to trader");
         sendMessage(m.getLeaderID(),messageFromServer);
     }
@@ -120,53 +144,134 @@ public class Server {
         }
     }
 
+//    public void writeDataToFile2() {
+//        // open file
+//        String outputPath = "src/sellerInfo.txt";
+//        File file = new File(outputPath);
+//        BufferedWriter bf = null;
+//        try {
+//            // create new BufferedWriter for the output file
+//            bf = new BufferedWriter(new FileWriter(file));
+//            for (Map.Entry<String,Integer> entry : inventory.entrySet()) {
+//                    bf.write(entry.getKey() + ":"+entry.getValue());
+//                    bf.newLine();
+//            }
+//            bf.flush();
+//            bf.close();
+//        }
+//        catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+
     public void writeDataToFile() {
-        // open file
+
         String outputPath = "src/sellerInfo.txt";
         File file = new File(outputPath);
         BufferedWriter bf = null;
         try {
             // create new BufferedWriter for the output file
             bf = new BufferedWriter(new FileWriter(file));
-            for (Map.Entry<String,Integer> entry : inventory.entrySet()) {
-                    bf.write(entry.getKey() + ":"+entry.getValue());
-                    bf.newLine();
-                    bf.flush();
+
+            // iterate map entries
+            for (Map.Entry<String, Integer> entry : inventory.entrySet()) {
+                // put key and value separated by a colon
+                bf.write(entry.getKey() + ":"
+                        + entry.getValue());
+                // new line
+                bf.newLine();
             }
             bf.flush();
-            bf.close();
         }
         catch (IOException e) {
             e.printStackTrace();
         }
+        finally {
+            try {
+                // always close the writer
+                bf.close();
+            }
+            catch (Exception e) {
+            }
+        }
     }
 
     public void readDataFromFile() {
+
         BufferedReader br = null;
+
         try {
+            // create file object
             String outputPath = "src/sellerInfo.txt";
             File file = new File(outputPath);
-            br = new BufferedReader(new FileReader(file));
-            String line = null;
-            inventory.clear();
-            while ((line = br.readLine()) != null) {
-                // System.out.println(line);
-                if(line.equals("null:0")) continue;
-                String[] sellerInfo = line.split(":");
-                String item = sellerInfo[0];
-                int itemCount = Integer.parseInt(sellerInfo[1].trim());
-                if(item.equals("null")){
-                    continue;
-                }else{
-                    inventory.put(item, itemCount);
-                }
 
+            // create BufferedReader object from the File
+            br = new BufferedReader(new FileReader(file));
+
+            String line = null;
+
+            // read file line by line
+            while ((line = br.readLine()) != null) {
+
+                // split the line by :
+                String[] parts = line.split(":");
+
+                // first part is name, second is number
+                String name = parts[0].trim();
+                int number = Integer.parseInt(parts[1].trim());
+
+                // put name, number in HashMap if they are
+                // not empty
+                if (!name.equals("")) {
+                    inventory.put(name, number);
+                }
             }
-            br.close();
         }
         catch (Exception e) {
             e.printStackTrace();
         }
+        finally {
+
+            // Always close the BufferedReader
+            if (br != null) {
+                try {
+                    br.close();
+                }
+                catch (Exception e) {
+                };
+            }
+        }
     }
+
+
+
+
+//    public void readDataFromFile2() {
+//        BufferedReader br = null;
+//        try {
+//            String outputPath = "src/sellerInfo.txt";
+//            File file = new File(outputPath);
+//            br = new BufferedReader(new FileReader(file));
+//            String line = null;
+//            inventory.clear();
+//            while ((line = br.readLine()) != null) {
+//                // System.out.println(line);
+//                //if(line.equals("null:0")) continue;
+//                String[] sellerInfo = line.split(":");
+//                String item = sellerInfo[0];
+//                int itemCount = Integer.parseInt(sellerInfo[1].trim());
+//                if(item.equals("null")){
+//                    continue;
+//                }else{
+//                    inventory.put(item, itemCount);
+//                }
+//
+//            }
+//            br.close();
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
 }
