@@ -5,10 +5,10 @@ Main branch - election-fault-tolerance
 Running system
 
 ● Open the terminal
+
 ● Clone the repository :
 https://github.com/Rishita-Golla/Bazaar/tree/election-fault-tolerance
-● cd src
-● Run the random network generation program.
+cd src
 
 Command:
 
