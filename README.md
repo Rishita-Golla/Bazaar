@@ -8,6 +8,7 @@ Running system
 
 ● Clone the repository :
 https://github.com/Rishita-Golla/Bazaar/tree/election-fault-tolerance
+
 cd src
 
 Command:
