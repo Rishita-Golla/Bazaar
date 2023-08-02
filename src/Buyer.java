@@ -41,13 +41,9 @@ public class Buyer extends Peer{
         m.setMessageType(Constants.BUY);
         m.setRequestedItem(buyerItem);
         m.setPeerID(this.peerID);
-        // int leaderID = random.nextInt(leaderIdsList.size());
-        //m.setLeaderID(leaderID);
-
-        //System.out.println("Starting new lookup for item: " + buyerItem + " with trader: " + leaderID);
-        // sendMessage(leaderID, m);
+        // System.out.println("Starting new lookup for item: " + buyerItem + " with trader: " + leaderID);
         System.out.println("Starting new lookup for item: " + buyerItem + " with trader: " + 3);
-        sendMessage(3, m);
+        // sendMessage(3, m);
     }
 
     @Override
@@ -59,7 +55,6 @@ public class Buyer extends Peer{
     }
     @Override
     void receiveLeaderUpdate(Message m) {
-        // leaderIdsList = m.getLeaderIDsList();
         int leaderId = m.getLeaderID();
         System.out.println("Received leader update, new leader Ids are " + leaderId);
        // System.out.println("Received leader update, new leader Ids are " + leaderIdsList);
