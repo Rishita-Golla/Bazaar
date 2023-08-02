@@ -11,12 +11,11 @@ public class Server {
     protected final Map<Integer, String> peerIDIPMap;
 
     Server(Map<Integer, String> peerIDIPMap) {
-        // create a new file to store all item/count info
         this.peerIDIPMap = peerIDIPMap;
     }
 
     public void processMessage(Message m) throws MalformedURLException {
-        switch(m.getMessageType()) { // add Leader_BS case
+        switch(m.getMessageType()) {
             case Constants.BUY:
                 processBuy(m);
             case Constants.SELL:
@@ -37,18 +36,14 @@ public class Server {
         } else {
             m.setAvailable(false);
         }
-        // update file to decrement item count
-       // sendMessage(leaderId, reply);
-        sendMessage(3, m);
+        sendMessage(leaderId, m);
     }
 
     private void processSell(Message m) throws MalformedURLException {
         m.setMessageType(Constants.SERVER_ACK);
-        // send item and count to inc cache?
-
-        // access file and update item count - stock
+        
         System.out.println("Sending stock ack to trader");
-        sendMessage(3, m); // set boolean ack. When warehouse can't stock?
+        sendMessage(leaderId, m);
     }
 
     public void sendMessage(int receiverID, Message m) throws MalformedURLException {
